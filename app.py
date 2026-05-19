@@ -132,16 +132,25 @@ if not st.session_state.access_token:
                         resp = requests.post(
                             f"{BACKEND_URL}/auth/login",
                             json={"username": login_user, "password": login_pass},
-                            timeout=5
+                            timeout=60
                         )
                         if resp.status_code == 200:
-                            data = resp.json()
-                            st.session_state.access_token = data["access_token"]
-                            st.session_state.username = login_user
-                            st.success("Successfully logged in!")
-                            st.rerun()
+                            try:
+                                data = resp.json()
+                                st.session_state.access_token = data["access_token"]
+                                st.session_state.username = login_user
+                                st.success("Successfully logged in!")
+                                st.rerun()
+                            except ValueError:
+                                st.error("Received an invalid response from backend. The service may still be booting up. Please try again in 10-15 seconds.")
                         else:
-                            st.error(f"Login failed: {resp.json().get('detail', 'Unknown error')}")
+                            try:
+                                err_detail = resp.json().get('detail', 'Unknown error')
+                            except ValueError:
+                                err_detail = f"Gateway Error {resp.status_code}. The backend API is waking up on Render. Please wait 10 seconds and try again!"
+                            st.error(f"Login failed: {err_detail}")
+                    except requests.exceptions.Timeout:
+                        st.error("Request timed out. The backend API is sleeping and taking longer than expected to wake up. Please try again in a few seconds!")
                     except Exception as e:
                         st.error(f"Could not connect to FastAPI backend: {e}")
                         
@@ -161,12 +170,18 @@ if not st.session_state.access_token:
                         resp = requests.post(
                             f"{BACKEND_URL}/auth/signup",
                             json={"username": signup_user, "password": signup_pass},
-                            timeout=5
+                            timeout=60
                         )
                         if resp.status_code == 201:
                             st.success("Registration successful! You can now log in using the Login tab.")
                         else:
-                            st.error(f"Sign up failed: {resp.json().get('detail', 'Username already taken')}")
+                            try:
+                                err_detail = resp.json().get('detail', 'Username already taken')
+                            except ValueError:
+                                err_detail = f"Gateway Error {resp.status_code}. The backend API is waking up on Render. Please wait 10 seconds and try again!"
+                            st.error(f"Sign up failed: {err_detail}")
+                    except requests.exceptions.Timeout:
+                        st.error("Request timed out. The backend API is sleeping and taking longer than expected to wake up. Please try again in a few seconds!")
                     except Exception as e:
                         st.error(f"Could not connect to FastAPI backend: {e}")
 
@@ -234,21 +249,24 @@ else:
                     f"{BACKEND_URL}/predict",
                     json=payload,
                     headers=headers,
-                    timeout=10
+                    timeout=60
                 )
                 
                 if resp.status_code == 200:
-                    result = resp.json()
-                    price = result["predicted_price"]
-                    
-                    # Premium Price display Card
-                    st.markdown(f"""
-                    <div style="background-color: #121212; padding: 2rem; border-radius: 12px; border: 2px solid #FF4B4B; text-align: center; margin-top: 1.5rem;">
-                        <p style="font-size: 1.1rem; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">Estimated Market Price</p>
-                        <h2 style="font-size: 3.5rem; font-weight: 700; color: #FF4B4B; margin: 0;">₹ {price:,}</h2>
-                        <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">Predicted with 91.68% accuracy using optimal XGBoost + LightGBM ensemble</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    try:
+                        result = resp.json()
+                        price = result["predicted_price"]
+                        
+                        # Premium Price display Card
+                        st.markdown(f"""
+                        <div style="background-color: #121212; padding: 2rem; border-radius: 12px; border: 2px solid #FF4B4B; text-align: center; margin-top: 1.5rem;">
+                            <p style="font-size: 1.1rem; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;">Estimated Market Price</p>
+                            <h2 style="font-size: 3.5rem; font-weight: 700; color: #FF4B4B; margin: 0;">₹ {price:,}</h2>
+                            <p style="font-size: 0.9rem; color: #666; margin-top: 0.5rem;">Predicted with 91.68% accuracy using optimal XGBoost + LightGBM ensemble</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    except ValueError:
+                        st.error("Received an invalid response from backend. The service may still be booting up. Please try again in 10-15 seconds.")
                     
                 elif resp.status_code in [401, 403]:
                     st.error("Authentication expired or invalid. Please log in again.")
@@ -256,7 +274,13 @@ else:
                     st.session_state.username = None
                     st.rerun()
                 else:
-                    st.error(f"Prediction failed (Status {resp.status_code}): {resp.json().get('detail', 'Unknown API Error')}")
+                    try:
+                        err_detail = resp.json().get('detail', 'Unknown API Error')
+                    except ValueError:
+                        err_detail = f"Gateway Error {resp.status_code}. The backend API is waking up on Render. Please wait 10 seconds and try again!"
+                    st.error(f"Prediction failed: {err_detail}")
                     
+            except requests.exceptions.Timeout:
+                st.error("Request timed out. The backend API is sleeping and taking longer than expected to wake up. Please try again in a few seconds!")
             except Exception as e:
                 st.error(f"Failed to communicate with prediction API backend: {e}")
