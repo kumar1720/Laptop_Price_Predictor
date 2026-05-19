@@ -1,0 +1,44 @@
+services:
+  # 1. FastAPI Backend API Service
+  - type: web
+    name: laptop-price-predictor-api
+    env: docker
+    plan: free
+    region: oregon
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: API_KEY
+        value: lappredict_secure_api_key_2026
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: cache-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: cache-redis
+          property: port
+
+  # 2. Redis Caching Database Instance
+  - type: redis
+    name: cache-redis
+    plan: free
+    region: oregon
+    ipAllowList: [] # Empty allows internal connections only for security
+
+  # 3. Streamlit Frontend Web Service
+  - type: web
+    name: laptop-price-predictor-ui
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $$PORT
+    envVars:
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: laptop-price-predictor-api
+          property: host

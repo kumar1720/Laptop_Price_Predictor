@@ -1,0 +1,16 @@
+pandas
+numpy
+streamlit
+scikit-learn
+matplotlib
+seaborn
+xgboost
+lightgbm
+fastapi
+uvicorn
+PyJWT
+redis
+prometheus-fastapi-instrumentator
+python-multipart
+pydantic
+pydantic-settings

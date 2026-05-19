@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  fastapi-app:
+    build: .
+    container_name: fastapi-app
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=prod_super_secret_key_jwt_laptop_prediction_api_2026
+      - API_KEY=lappredict_secure_api_key_2026
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MODEL_PATH=app/models/pipe.pkl
+      - DF_PATH=app/models/df.pkl
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-monitor
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - fastapi-app
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
