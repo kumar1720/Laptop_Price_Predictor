@@ -8,13 +8,19 @@ import os
 # FastAPI Backend Configuration
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000/api/v1")
 if not BACKEND_URL.startswith("http"):
-    if "localhost" in BACKEND_URL or "127.0.0.1" in BACKEND_URL:
-        BACKEND_URL = f"http://{BACKEND_URL}"
+    if "onrender.com" in BACKEND_URL:
+        # Public Render URL must use HTTPS and no port suffix
+        BACKEND_URL = f"https://{BACKEND_URL}"
+    elif "localhost" in BACKEND_URL or "127.0.0.1" in BACKEND_URL:
+        if ":" not in BACKEND_URL:
+            BACKEND_URL = f"http://{BACKEND_URL}:8000"
+        else:
+            BACKEND_URL = f"http://{BACKEND_URL}"
     else:
         if ":" in BACKEND_URL:
             BACKEND_URL = f"http://{BACKEND_URL}"
         else:
-            # Render internal private host connects via port 8000 (exposed in Dockerfile)
+            # Render internal private host connects via port 8000
             BACKEND_URL = f"http://{BACKEND_URL}:8000"
 
 if not BACKEND_URL.endswith("/api/v1"):
