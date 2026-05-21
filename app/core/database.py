@@ -30,10 +30,19 @@ class DatabaseClient:
             self.is_connected = True
             logger.info(f"Successfully connected to MongoDB database '{self.db_name}'")
         except Exception as e:
+            err_msg = str(e)
             logger.error(
-                f"MongoDB connection failed: {e}. "
+                f"MongoDB connection failed: {err_msg}. "
                 "Falling back to in-memory user credentials storage."
             )
+            if "SSL handshake failed" in err_msg or "TLSV1_ALERT_INTERNAL_ERROR" in err_msg:
+                logger.warning(
+                    "⚠️ MongoDB connection failed due to SSL handshake / TLS alert. "
+                    "This is almost always caused by MongoDB Atlas IP Whitelist (Network Access) restrictions. "
+                    "Please log in to your MongoDB Atlas dashboard -> Network Access -> Add IP Address, "
+                    "and add '0.0.0.0/0' (allow connection from anywhere, required for dynamic cloud hosts like Render) "
+                    "or your current IP address to the whitelist to resolve this issue."
+                )
             self.client = None
             self.db = None
             self.users_collection = None
