@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from app.core.security import create_access_token
 from app.core.config import settings
 from typing import Optional
-from app.cache.redis_cache import cache
+from app.core.database import db_client
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -20,39 +20,18 @@ class MessageResponse(BaseModel):
     success: bool
     message: str
 
-# Fallback in-memory database for local development or if Redis is offline
-USERS_DB = {
-    "admin": "password"
-}
-
-# Seed default admin user into Redis if available
+# Seed default admin user into database if not present
 try:
-    if cache.client and not cache.client.hexists("users_db", "admin"):
-        cache.client.hset("users_db", "admin", "password")
+    if not db_client.get_user_password("admin"):
+        db_client.save_user("admin", "password")
 except Exception:
     pass
 
 def get_user_password(username: str) -> Optional[str]:
-    username = username.strip()
-    if cache.client:
-        try:
-            stored_pass = cache.client.hget("users_db", username)
-            if stored_pass:
-                return stored_pass
-        except Exception:
-            pass
-    return USERS_DB.get(username)
+    return db_client.get_user_password(username)
 
 def save_user(username: str, password: str) -> bool:
-    username = username.strip()
-    if cache.client:
-        try:
-            cache.client.hset("users_db", username, password)
-            return True
-        except Exception:
-            pass
-    USERS_DB[username] = password
-    return True
+    return db_client.save_user(username, password)
 
 @router.post("/signup", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
 async def signup(payload: UserAuthRequest):

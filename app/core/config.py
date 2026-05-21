@@ -18,6 +18,10 @@ class Settings:
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
     REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
     
+    # MongoDB configuration
+    MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    MONGO_DB: str = os.getenv("MONGO_DB", "laptop_price_db")
+    
     # Model configuration
     MODEL_PATH: str = os.getenv("MODEL_PATH", "app/models/pipe.pkl")
     DF_PATH: str = os.getenv("DF_PATH", "app/models/df.pkl")

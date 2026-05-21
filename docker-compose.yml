@@ -14,4 +14,6 @@ services:
       - REDIS_HOST=127.0.0.1
       - REDIS_PORT=6379
       - BACKEND_URL=http://127.0.0.1:8000/api/v1
+      - MONGO_URI=mongodb://localhost:27017
+      - MONGO_DB=laptop_price_db
     restart: always
