@@ -6,7 +6,7 @@ import requests
 import os
 
 # FastAPI Backend Configuration
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000/api/v1")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000/api/v1")
 if not BACKEND_URL.startswith("http"):
     if "onrender.com" in BACKEND_URL:
         # Public Render URL must use HTTPS and no port suffix
