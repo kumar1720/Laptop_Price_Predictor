@@ -11,9 +11,6 @@ class DatabaseClient:
         self.client = None
         self.db = None
         self.users_collection = None
-        self._memory_fallback = {
-            "admin": "password"
-        }
         self.is_connected = False
 
         try:
@@ -31,9 +28,8 @@ class DatabaseClient:
             logger.info(f"Successfully connected to MongoDB database '{self.db_name}'")
         except Exception as e:
             err_msg = str(e)
-            logger.error(
-                f"MongoDB connection failed: {err_msg}. "
-                "Falling back to in-memory user credentials storage."
+            logger.critical(
+                f"MongoDB connection failed: {err_msg}."
             )
             if "SSL handshake failed" in err_msg or "TLSV1_ALERT_INTERNAL_ERROR" in err_msg:
                 logger.warning(
@@ -46,39 +42,37 @@ class DatabaseClient:
             self.client = None
             self.db = None
             self.users_collection = None
+            raise e
 
     def get_user_password(self, username: str) -> str:
         username = username.strip()
-        if self.is_connected and self.users_collection is not None:
-            try:
-                user = self.users_collection.find_one({"username": username})
-                if user:
-                    return user.get("password")
-                return None
-            except Exception as e:
-                logger.error(f"Error fetching user from MongoDB: {e}")
-        
-        # Fallback to in-memory database
-        return self._memory_fallback.get(username)
+        if not self.is_connected or self.users_collection is None:
+            raise RuntimeError("Database connection not established. Cannot fetch credentials.")
+        try:
+            user = self.users_collection.find_one({"username": username})
+            if user:
+                return user.get("password")
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching user from MongoDB: {e}")
+            raise e
 
     def save_user(self, username: str, password: str) -> bool:
         username = username.strip()
-        if self.is_connected and self.users_collection is not None:
-            try:
-                # Store user credentials securely
-                self.users_collection.update_one(
-                    {"username": username},
-                    {"$set": {"password": password}},
-                    upsert=True
-                )
-                logger.info(f"Successfully saved user '{username}' to MongoDB.")
-                return True
-            except Exception as e:
-                logger.error(f"Error saving user to MongoDB: {e}")
-        
-        # Fallback to in-memory database
-        self._memory_fallback[username] = password
-        logger.info(f"Saved user '{username}' to in-memory fallback database.")
-        return True
+        if not self.is_connected or self.users_collection is None:
+            raise RuntimeError("Database connection not established. Cannot save credentials.")
+        try:
+            # Store user credentials securely
+            self.users_collection.update_one(
+                {"username": username},
+                {"$set": {"password": password}},
+                upsert=True
+            )
+            logger.info(f"Successfully saved user '{username}' to MongoDB.")
+            return True
+        except Exception as e:
+            logger.error(f"Error saving user to MongoDB: {e}")
+            raise e
 
 db_client = DatabaseClient()
+
