@@ -14,5 +14,5 @@ prometheus-fastapi-instrumentator
 python-multipart
 pydantic
 pydantic-settings
-pymongo
+pymongo[srv]
 python-dotenv
