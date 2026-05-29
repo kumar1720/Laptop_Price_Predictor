@@ -1,3 +1,7 @@
+Live Link : https://laptop-price-predictor-oi00.onrender.com/
+
+AIM : This project aims to predict laptop prices based on various specifications such as brand, processor, RAM, storage capacity, screen size, and screen resolution.
+
 # project-folder/
 
 - **app/**: Main application package containing all FastAPI app components
